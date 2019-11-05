@@ -1,0 +1,37 @@
+<html>
+    <style>
+        body{
+            font-size: 15pt;
+            font-family:arial;
+        }
+    </style>
+
+    <body>
+        <h1>
+            List of Restaurants
+        </h1>
+
+        <form method="POST" action="/">
+            <p style="font-size:12pt">Restaurant Name: <input type="text" name="name" value ={{request.form.name}}> <input type="submit" name = "button" value="Search"></p>
+            <p style ='font-size:12pt'><input type = "submit" name = "button" value = "Clear" ></p>
+        </form>
+
+        <div>
+            <ol>
+                {% for n in data%}
+                <li>
+                    <a href = "{{''.join(n['name'].split())}}/{{n['rid']}}">{{n['name']}}</a>
+                    <ul style = "font-size:12pt">
+                        <p>
+                        <li>Health score: {{n['hyg_score']}}</li>
+                        <li>Alcohol served: {{ n['alcohol']}}</li>    
+                        <li>Average user rating: {{n['u_rating']}}/5</li>
+                        <li>Average critic rating: {{n['c_rating']}}/5</li>
+                        </p>    
+                    </ul>
+                </li>
+                {% endfor %}
+            </ol>
+       </div>
+    </body>
+</html>
