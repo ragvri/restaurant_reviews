@@ -47,7 +47,6 @@ engine.execute(
     """INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
 
 
-
 @app.before_request
 def before_request():
     """
@@ -58,7 +57,7 @@ def before_request():
     The variable g is globally accessible.
     """
     if 'logged_in' not in session:
-        session['logged_in'] = False 
+        session['logged_in'] = False
 
     try:
         g.conn = engine.connect()
@@ -137,7 +136,6 @@ def restaurants():
         for result in cursor:
             names.append(result)
         cursor.close()
-
     #
     # Flask uses Jinja templates, which is an extension to HTML where you can
     # pass data to a template and dynamically generate HTML based on the data
@@ -164,8 +162,7 @@ def restaurants():
     #     <div>{{n}}</div>
     #     {% endfor %}
     #
-    context = dict(data=names)
-
+    context = {'data': names}
     #
     # render_template looks in the templates/ folder for files.
     # for example, the below file reads template/restaurants.html
@@ -175,8 +172,6 @@ def restaurants():
 
 @app.route('/login', methods=["GET", "POST"])
 def login():
-    # abort(401)
-    # this_is_never_executed()
     error = False
     if(session['logged_in']):
         return redirect(url_for('restaurants'))
@@ -201,13 +196,6 @@ def login():
     return render_template('login.html', error=error)
 
 
-@app.route('/logout')
-def logout():
-    session['logged_in'] = False
-    session['userid'] = None
-    return redirect(url_for('restaurants'))
-
-
 @app.route('/restaurants/<id>')
 def another(id):
 
@@ -228,24 +216,31 @@ def another(id):
     ''')
     for location in cursor:
         locations.append(location)
-
+    print(locations)
     # get normal user reviews
     normal_reviews = []
     cursor = g.conn.execute(f'''
-        SELECT * FROM reviews_gives r
+        SELECT r.text,r.likes, r.rating, u.name, u.userid
+        FROM reviews_gives r, Users u
         WHERE r.userid IN 
         (SELECT n.userid FROM normal n)
+        and r.userid = u.userid
         and r.rid ='{id}'
     ''')
     for review in cursor:
         normal_reviews.append(review)
 
+    print(normal_reviews)
+
     # get critic reviews
     critic_reviews = []
     cursor = g.conn.execute(f'''
-        SELECT * FROM reviews_gives r
+        SELECT r.text, r.likes, r.rating, u.name, u.userid
+        FROM reviews_gives r, Users u
         WHERE r.userid IN 
-        (SELECT c.userid FROM critic c ) and r.rid ='{id}'
+        (SELECT c.userid FROM critic c ) and 
+        r.userid = u.userid and 
+        r.rid ='{id}'
     ''')
 
     for review in cursor:
@@ -254,19 +249,108 @@ def another(id):
     # get menu items
     menu_items = []
     cursor = g.conn.execute(f'''
-        SELECT m.name, m.category, m.cost, m.descr, m.type
+        SELECT m.rid, m.name, m.category, m.cost, m.descr, m.typ
         FROM menu_item m
         WHERE m.rid = '{id}' 
     ''')
 
     for item in cursor:
-        food_type = item['']
+        menu_items.append(item)
 
-    context = {'name': restaurant_name, 'id': restaurant_id}
+    # get similar restaurants
+    similar_restaurants = []
+    cursor = g.conn.execute(f'''
+        SELECT s1.rid2, r1.name 
+        from similar_rest s1, restaurant_owns r1 
+        WHERE s1.rid1 = '{id}' 
+        and r1.rid = s1.rid2
+        UNION 
+        SELECT s2.rid1, r2.name 
+        from similar_rest s2, restaurant_owns r2 
+        WHERE s2.rid2 = '{id}'
+        and r2.rid = s2.rid1
+    ''')
+
+    for restaurant in cursor:
+        similar_restaurants.append(restaurant)
+
+    print(similar_restaurants)
+
+    context = {'name': restaurant_name, 'id': restaurant_id, 'similar': similar_restaurants,
+               'menu': menu_items, 'critic_reviews': critic_reviews, 'normal_reviews': normal_reviews, 'locations': locations}
+    # context  ={'name':restaurant_name, 'id': restaurant_id}
+    print(restaurant_name)
     return render_template('restaurant_page.html', **context)
 
-    print(id)
-    return render_template('another.html')
+
+@app.route('/logout', methods=["GET", "POST"])
+def logout():
+    if(session['logged_in']):
+        print("Method", request.method)
+        print("Session Details", session)
+        if request.method == "POST":
+            print("Logging Out")
+            session['logged_in'] = False
+            session['userid'] = None
+            print("Session Details", session)
+            return redirect(url_for('restaurants'))
+        else:
+            userid = session['userid']
+            cursor = g.conn.execute(f'''
+                SELECT name
+                FROM Users
+                WHERE userid = '{userid}'
+            ''')
+            for result in cursor:
+                name = result[0]
+            return render_template('logout.html', name=name)
+
+    return redirect(url_for('restaurants'))
+
+
+@app.route('/critics/<id>')
+def critic(id):
+    cursor = g.conn.execute(f'''
+        SELECT u.name, c.score
+        FROM Critic as c, Users as u
+        WHERE c.userid = u.userid and c.userid = '{id}'
+    ''')
+    for result in cursor:
+        critic_name = result[0]
+        critic_score = result[1]
+
+    cursor = g.conn.execute(f'''
+        SELECT r.rid, r.name, rv.text, rv.likes, rv.rating
+        FROM Critic as c, Reviews_gives as rv, Restaurant_owns as r
+        WHERE c.userid = rv.userid and c.userid = '{id}' and rv.rid = r.rid
+    ''')
+
+    reviews = []
+
+    class review:
+        def __init__(self, data):
+            self.rid = data[0]
+            self.name = data[1]
+            self.text = data[2]
+            self.likes = data[3]
+            self.rating = data[4]
+
+    for result in cursor:
+        reviews.append(review(result))
+
+    cursor = g.conn.execute(f'''
+        SELECT r.rid, r.name
+        FROM  Critic as c, Favourite as f, Location_isat as l, Restaurant_owns as r
+        WHERE c.userid = '{id}' and  c.userid = f.userid and f.lat = l.lat and f.long = l.long and l.rid = r.rid
+    ''')
+
+    for result in cursor:
+        critic_favrid = result[0]
+        critic_fav = result[1]
+
+    context = {'name': critic_name, 'score': critic_score,
+               'favourite': critic_fav, 'fav_rid': critic_favrid, 'reviews': reviews}
+    return render_template('critics.html', **context)
 
 
 if __name__ == "__main__":

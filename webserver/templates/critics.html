@@ -1,0 +1,40 @@
+<html>
+    <style>
+        body{
+            font-size: 15pt;
+            font-family: arial;
+        }
+    </style>
+
+    <body>
+        <h1>
+            {{name}}
+        </h1>
+        <h2>
+            Score: {{score}}
+        </h2>
+        <h2>
+            Reviews
+        </h2>
+        <table border = "1" cellpadding="10">
+            <tr>
+                <th>Restaurant Name</th>
+                <th>Review</th>
+                <th>Ratings</th>
+                <th>Likes</th>
+            </tr>
+            {% for r in reviews %}
+                <tr>
+                    <td width ='10%'><a href = "/restaurants/{{r.rid}}">{{ r.name }}</a></td>
+                    <td width ='40%'>{{ r.text }}</td>
+                    <td align = 'center' width ='10%'>{{ r.rating }}</td>
+                    <td align = 'center' width = '10%'>{{ r.likes }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        <h2>
+            Favourite Restaurant:  <a href = "/restaurants/{{fav_rid}}">{{ favourite}} </a>
+        </h2>
+        
+    </body>
+</html>

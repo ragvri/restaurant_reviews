@@ -10,6 +10,113 @@
         <h1>
             {{name}}
         </h1>
-        
+
+        <div>
+            Locations
+            <ol style='font-size: 10pt'>
+                {% for location in locations%}
+                    <li>
+                        <ul>
+                            <li>Capacity: {{location['capacity']}}</li>
+                            <li>Building: {{location['building']}}</li>
+                            <li>City: {{location['city']}}</li>
+                            <li>State: {{location['state']}}</li>
+                            <li>Zip:{{location['zip']}}</li>
+                        </ul>
+                        <p>
+                            <a href ="nearby/{{location['lat']}}-{{location['long']}}">
+                            Get Nearby restaurants
+                            </a>
+                        </p>                    
+                    </li>
+                {% endfor %}
+            </ol>
+        </div>
+
+    </br>
+        <div>
+            User Reviews
+            <table border = '1' cellpadding='10' style='font-size:10pt'>
+                <tr>
+                    <th>Name</th>
+                    <th>Review</th>
+                    <th>Rating</th>
+                    <th>Likes</th>
+                </tr>
+                {% for review in normal_reviews%}
+                <tr>
+                    <td width='10%'>{{review['name']}}</td>
+                    <td width='40%'>{{review['text']}}</td>
+                    <td align = 'center' width='10%'>{{review['rating']}}</td>
+                    <td align = 'center' width='10%'>{{review['likes']}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+
+        </div>
+     
+    </br>
+        <div>
+            Critic Reviews
+            <table border = '1' cellpadding='10' style='font-size:10pt'>
+                <tr>
+                    <th>Name</th>
+                    <th>Review</th>
+                    <th>Rating</th>
+                    <th>Likes</th>
+                </tr>
+                {% for review in critic_reviews%}
+                <tr>
+                    <td width='10%'><a href = "/critics/{{review['userid']}}">{{review['name']}}</a></td>
+                    <td width='40%'>{{review['text']}}</td>
+                    <td align = 'center' width='10%'>{{review['rating']}}</td>
+                    <td align = 'center' width='10%'>{{review['likes']}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+
+        </div>
+     
+    </br>
+        <div>
+            Menu Items
+            <table border = '1' cellpadding='10' style='font-size:10pt'>
+                <tr>
+                    <th>Name</th>
+                    <th>category</th>
+                    <th>Cost</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                </tr>
+                {% for item in menu %}
+                <tr>
+                    <td width='10%'>{{item['name']}}</td>
+                    <td width='10%'>{{item['category']}}</td>
+                    <td align = 'center' width='10%'>{{item['cost']}}</td>
+                    <td align = 'center' width='25%'>{{item['descr']}}</td>
+                    {% if item['typ'] == '0' %}
+                        <td align = 'center' width = '10%'>Vegan</td>
+                    {% elif item['typ'] == '1' %}
+                        <td align = 'center' width = '10%'>Vegetarian</td>
+                    {% else %}
+                        <td align = 'center' width = '10%'>Non-vegetarian</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+ 
+    </br>
+        <div>
+            Similar Restaurant
+        <ol style='font-size: 10pt'>
+            {% for restaurant in similar%}
+                <li>
+                    <a href = '/restaurants/{{restaurant[0]}}'>{{restaurant[1]}}</a>
+                </li>
+            {% endfor %}
+            </ol>      
+        </div>
+               
     </body>
 </html>
