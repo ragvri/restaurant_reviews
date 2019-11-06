@@ -4,7 +4,23 @@
             font-size: 15pt;
             font-family: arial;
         }
-    </style>
+    </style> 
+    
+    {% if logged_in%}
+        <a href = '/logout'>
+            <button name = 'Logout' type ='submit' value='logout'>
+                Logout
+            </button>
+        </a>
+    {%else%}
+        <a href = '/login'>
+            <button name = 'login' type = 'submit' value ='login'>
+                Login
+            </button>
+        </a>
+    {%endif%}
+
+
 
     <body>
         <h1>

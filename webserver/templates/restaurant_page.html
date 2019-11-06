@@ -6,6 +6,20 @@
         }
     </style>
 
+    {% if logged_in%}
+        <a href = '/logout'>
+            <button name = 'Logout' type ='submit' value='logout'>
+                Logout
+            </button>
+        </a>
+    {%else%}
+        <a href = '/login'>
+            <button name = 'login' type = 'submit' value ='login'>
+                Login
+            </button>
+        </a>
+    {%endif%}
+
     <body>
         <h1>
             {{name}}
@@ -24,7 +38,7 @@
                             <li>Zip:{{location['zip']}}</li>
                         </ul>
                         <p>
-                            <a href ="nearby/{{location['lat']}}-{{location['long']}}">
+                            <a href ="nearby/{{location['lat']}}/{{location['long']}}">
                             Get Nearby restaurants
                             </a>
                         </p>                    
@@ -34,6 +48,13 @@
         </div>
 
     </br>
+        {%if user_critic_logged_in%}
+            <a href = "/give_review/{{id}}">
+                <button name = 'give_review' type = 'submit' value = "{{id}}">
+                    Add review 
+                </button>
+            </a>
+        {%endif%}
         <div>
             User Reviews
             <table border = '1' cellpadding='10' style='font-size:10pt'>
@@ -42,13 +63,25 @@
                     <th>Review</th>
                     <th>Rating</th>
                     <th>Likes</th>
+                    {% if user_critic_logged_in %}
+                        <th>Like</th>
+                    {% endif%}
                 </tr>
                 {% for review in normal_reviews%}
                 <tr>
                     <td width='10%'>{{review['name']}}</td>
                     <td width='40%'>{{review['text']}}</td>
-                    <td align = 'center' width='10%'>{{review['rating']}}</td>
-                    <td align = 'center' width='10%'>{{review['likes']}}</td>
+                    <td align = 'center' width='5%'>{{review['rating']}}</td>
+                    <td align = 'center' width='5%'>{{review['likes']}}</td>
+                    {% if user_critic_logged_in %}
+                        <form method = "POST" action="">
+                            <td align = 'center' width ='5%'>
+                                <button name = 'normal_like' type = "submit" value = "{{review['revid']}}">
+                                    Like
+                                </button>
+                            </td>
+                        </form>
+                    {% endif%}
                 </tr>
                 {% endfor %}
             </table>
@@ -64,14 +97,26 @@
                     <th>Review</th>
                     <th>Rating</th>
                     <th>Likes</th>
+                    {% if user_critic_logged_in %}
+                        <th>Like</th>
+                    {% endif %}
                 </tr>
                 {% for review in critic_reviews%}
                 <tr>
                     <td width='10%'><a href = "/critics/{{review['userid']}}">{{review['name']}}</a></td>
                     <td width='40%'>{{review['text']}}</td>
-                    <td align = 'center' width='10%'>{{review['rating']}}</td>
-                    <td align = 'center' width='10%'>{{review['likes']}}</td>
-                </tr>
+                    <td align = 'center' width='5%'>{{review['rating']}}</td>
+                    <td align = 'center' width='5%'>{{review['likes']}}</td>
+                    {% if user_critic_logged_in %}
+                        <form method ="POST" action = "">
+                            <td align = 'center' width = '5%'>
+                                <button name = 'critic_like' type ='submit' value="{{review['userid']}}-{{review['revid']}}">
+                                    Like
+                                </button>
+                            </td>
+                        </form>
+                    {% endif%}
+               </tr>
                 {% endfor %}
             </table>
 
@@ -87,23 +132,44 @@
                     <th>Cost</th>
                     <th>Description</th>
                     <th>Type</th>
+                    {% if owner_logged%}
+                        <th>Update</th>
+                    {% endif %}
                 </tr>
                 {% for item in menu %}
                 <tr>
                     <td width='10%'>{{item['name']}}</td>
                     <td width='10%'>{{item['category']}}</td>
-                    <td align = 'center' width='10%'>{{item['cost']}}</td>
+                    <td align = 'center' width='5%'>{{item['cost']}}</td>
                     <td align = 'center' width='25%'>{{item['descr']}}</td>
                     {% if item['typ'] == '0' %}
-                        <td align = 'center' width = '10%'>Vegan</td>
+                        <td align = 'center' width = '5%%'>Vegan</td>
                     {% elif item['typ'] == '1' %}
-                        <td align = 'center' width = '10%'>Vegetarian</td>
+                        <td align = 'center' width = '5%'>Vegetarian</td>
                     {% else %}
-                        <td align = 'center' width = '10%'>Non-vegetarian</td>
+                        <td align = 'center' width = '5%'>Non-vegetarian</td>
                     {% endif %}
+                    {% if owner_logged %}
+                        <form method ="POST" action = "update-{{item['name']}}">
+                            <td align = 'center' width = '5%'>
+                                <button name = 'update' type ='submit' value="update">
+                                    Update
+                                </button>
+                            </td>
+                       </form>
+                    {% endif%}
+                   </td>
                 </tr>
                 {% endfor %}
             </table>
+
+            {%if owner_logged%}
+                <form method = "POST" action = "add-{{id}}">
+                    <button name = 'Add' type = 'submit' value ="add">
+                        ADD
+                    </button>
+                </form>
+            {%endif%}
         </div>
  
     </br>

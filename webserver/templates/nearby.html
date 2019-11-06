@@ -5,7 +5,7 @@
             font-family:arial;
         }
     </style>
-
+    
     {% if logged_in%}
         <a href = '/logout'>
             <button name = 'Logout' type ='submit' value='logout'>
@@ -23,25 +23,22 @@
 
     <body>
         <h1>
-            List of Restaurants
+           Nearby Restaurants
         </h1>
-
-        <form method="POST" action="/">
-            <p style="font-size:12pt">Restaurant Name: <input type="text" name="name" value ={{request.form.name}}> <input type="submit" name = "button" value="Search"></p>
-            <p style ='font-size:12pt'><input type = "submit" name = "button" value = "Clear" ></p>
-        </form>
 
         <div>
             <ol>
-                {% for n in data%}
+                {% for r in nearby %}
                 <li>
-                    <a href = "restaurants/{{n['rid']}}">{{n['name']}}</a>
+                    <a href = "/restaurants/{{ r.rid }}">{{ r.name }}</a>
                     <ul style = "font-size:12pt">
                         <p>
-                        <li>Health score: {{n['hyg_score']}}</li>
-                        <li>Alcohol served: {{ n['alcohol']}}</li>    
-                        <li>Average user rating: {{n['u_rating']}}/5</li>
-                        <li>Average critic rating: {{n['c_rating']}}/5</li>
+                        <li>Building:  {{ r.building }}</li>
+                        <li>Capacity: {{ r.capacity }}</li> 
+                        <li>City: {{ r.city }}</li>   
+                        <li>State: {{ r.state }}</li>
+                        <li>Zip: {{ r.zip }}</li>
+                        <li>Distance (in Kms): {{ r.dis}}</li>
                         </p>    
                     </ul>
                 </li>
