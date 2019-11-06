@@ -1,0 +1,16 @@
+<html>
+    <head>
+        <title> Login Page</title>
+    </head>
+    <body>
+        <h1>Enter Login Details</h1>
+        <form actiom=" ", method="POST">
+            <input type ="text" placeholder="Username" name="username">
+            <input type ="password" placeholder="Password" name="password">
+            <input class="btn btn-default" type="submit" value="Login">
+        </form>
+        {% if error %}
+            <p> Username or Password is incorrect</p>
+        {% endif %}
+    </body>
+</html>

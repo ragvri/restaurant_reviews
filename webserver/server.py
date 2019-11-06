@@ -12,13 +12,12 @@ import os
 # accessible as a variable in index.html:
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response
+from flask import Flask, request, render_template, g, redirect, Response, session, url_for
 
 tmpl_dir = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
-
-
+app.secret_key = "super secret key"
 
 # XXX: The URI should be in the format of:
 #
@@ -48,6 +47,7 @@ engine.execute(
     """INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
 
 
+
 @app.before_request
 def before_request():
     """
@@ -57,6 +57,9 @@ def before_request():
 
     The variable g is globally accessible.
     """
+    if 'logged_in' not in session:
+        session['logged_in'] = False 
+
     try:
         g.conn = engine.connect()
     except:
@@ -100,7 +103,8 @@ def restaurants():
     request.form:     if the browser submitted a form, this contains the data in the form
     request.args:     dictionary of URL arguments, e.g., {a:1, b:2} for http://localhost?a=1&b=2
     """
-
+    if session['logged_in']:
+        print(session['userid'])
 
     if request.method == 'POST' and request.form["button"] == 'Search':
         print(request.form['button'])
@@ -131,7 +135,7 @@ def restaurants():
         ''')
         names = []
         for result in cursor:
-            names.append(result) 
+            names.append(result)
         cursor.close()
 
     #
@@ -169,10 +173,100 @@ def restaurants():
     return render_template("restaurants.html", **context)
 
 
-@app.route('/login')
+@app.route('/login', methods=["GET", "POST"])
 def login():
-    abort(401)
-    this_is_never_executed()
+    # abort(401)
+    # this_is_never_executed()
+    error = False
+    if(session['logged_in']):
+        return redirect(url_for('restaurants'))
+    if request.method == "POST":
+        username = request.form['username']
+        password = request.form['password']
+        print("Details", username, password)
+        cursor = g.conn.execute(
+            "SELECT * FROM Users WHERE userid='{}' and password='{}'".format(username, password))
+        counter = 0
+        for _ in cursor:
+            counter += 1
+        if counter == 0:
+            print("curson None")
+            error = True
+            return render_template('login.html', error=error)
+        else:
+            print("Logged In")
+            session['logged_in'] = True
+            session['userid'] = request.form['username']
+            return redirect(url_for('restaurants'))
+    return render_template('login.html', error=error)
+
+
+@app.route('/logout')
+def logout():
+    session['logged_in'] = False
+    session['userid'] = None
+    return redirect(url_for('restaurants'))
+
+
+@app.route('/restaurants/<id>')
+def another(id):
+
+    # get the name and the rid of the url
+    cursor = g.conn.execute(f'''
+        SELECT r.name, r.rid FROM Restaurant_owns r 
+        WHERE r.rid =  '{id}'
+        ''')
+    for result in cursor:
+        restaurant_name = result[0]
+        restaurant_id = result[1]
+
+    # get the locations of the given rid
+    locations = []
+    cursor = g.conn.execute(f'''
+        SELECT * from Location_isat l
+        WHERE l.rid = '{id}'
+    ''')
+    for location in cursor:
+        locations.append(location)
+
+    # get normal user reviews
+    normal_reviews = []
+    cursor = g.conn.execute(f'''
+        SELECT * FROM reviews_gives r
+        WHERE r.userid IN 
+        (SELECT n.userid FROM normal n)
+        and r.rid ='{id}'
+    ''')
+    for review in cursor:
+        normal_reviews.append(review)
+
+    # get critic reviews
+    critic_reviews = []
+    cursor = g.conn.execute(f'''
+        SELECT * FROM reviews_gives r
+        WHERE r.userid IN 
+        (SELECT c.userid FROM critic c ) and r.rid ='{id}'
+    ''')
+
+    for review in cursor:
+        critic_reviews.append(review)
+
+    # get menu items
+    menu_items = []
+    cursor = g.conn.execute(f'''
+        SELECT m.name, m.category, m.cost, m.descr, m.type
+        FROM menu_item m
+        WHERE m.rid = '{id}' 
+    ''')
+
+    for item in cursor:
+        food_type = item['']
+
+    context = {'name': restaurant_name, 'id': restaurant_id}
+    return render_template('restaurant_page.html', **context)
+
+    print(id)
+    return render_template('another.html')
 
 
 if __name__ == "__main__":
