@@ -12,6 +12,8 @@
     </a>
     <br>
     {% if logged_in%}
+        Hello {{username}}!
+        <br>
         <a href = '/logout/'>
             <button name = 'Logout' type ='submit' value='logout'>
                 Logout
@@ -78,7 +80,7 @@
                     <td width='40%'>{{review['text']}}</td>
                     <td align = 'center' width='5%'>{{review['rating']}}</td>
                     <td align = 'center' width='5%'>{{review['likes']}}</td>
-                    {% if user_critic_logged_in %}
+                    {% if user_critic_logged_in and review['userid']!=user_id%}
                         <form method = "POST" action="">
                             <td align = 'center' width ='5%'>
                                 <button name = 'normal_like' type = "submit" value = "{{review['revid']}}">
@@ -112,7 +114,7 @@
                     <td width='40%'>{{review['text']}}</td>
                     <td align = 'center' width='5%'>{{review['rating']}}</td>
                     <td align = 'center' width='5%'>{{review['likes']}}</td>
-                    {% if user_critic_logged_in %}
+                    {% if user_critic_logged_in and review['userid']!=user_id%}
                         <form method ="POST" action = "">
                             <td align = 'center' width = '5%'>
                                 <button name = 'critic_like' type ='submit' value="{{review['userid']}}-{{review['revid']}}">

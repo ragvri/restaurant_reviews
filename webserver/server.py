@@ -47,6 +47,18 @@ engine.execute(
     """INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
 
 
+def get_username(userid):
+    # returns the name of the userid
+    cursor = g.conn.execute(f'''
+    SELECT name
+        FROM Users
+        WHERE userid = '{userid}'
+    ''')
+    for result in cursor:
+        name = result[0]
+    return name
+
+
 @app.before_request
 def before_request():
     """
@@ -103,8 +115,11 @@ def restaurants():
     request.args:     dictionary of URL arguments, e.g., {a:1, b:2} for http://localhost?a=1&b=2
     """
     logged_in = False
+    username = None
     if session['logged_in']:
         logged_in = True
+        userid = session['userid']
+        username = get_username(userid)
 
     if request.method == 'POST' and request.form["button"] == 'Search':
         search_name = request.form['name']  # name of the search query
@@ -154,7 +169,7 @@ def restaurants():
     #     <div>{{n}}</div>
     #     {% endfor %}
     #
-    context = {'data': names, 'logged_in': logged_in}
+    context = {'data': names, 'logged_in': logged_in, 'username': username}
     #
     # render_template looks in the templates/ folder for files.
     # for example, the below file reads template/restaurants.html
@@ -188,8 +203,11 @@ def login():
 @app.route('/nearby/<lat>/<long>/')
 def nearby(lat, long):
     logged_in = False
+    username = None
     if(session['logged_in']):
         logged_in = True
+        userid = session['userid']
+        username = get_username(userid)
     cursor = g.conn.execute(f'''
         SELECT r.rid, r.name, l.building, l.capacity, l.city, l.state, l.zip, calculate_distance({lat}, {long}, l.lat, l.long, 'K') as distance
         FROM location_isat l, test_restaurant_owns r
@@ -212,7 +230,7 @@ def nearby(lat, long):
     for results in cursor:
         n_restaurants.append(restaurant(results))
 
-    context = {'nearby': n_restaurants, 'logged_in': logged_in}
+    context = {'nearby': n_restaurants, 'logged_in': logged_in, 'username': username}
     return render_template('nearby.html', **context)
 
 @app.route('/add-<id>/', methods = ['POST', 'GET'])
@@ -228,8 +246,10 @@ def add(id):
         owner_id = result
     owner_id = owner_id['userid']
     userid = None
+    username = None
     if session['logged_in']:
         userid = session['userid']
+        username = get_username(userid)
     # only the owner should be able to access the page
     if str(userid)!=str(owner_id): 
         return redirect(url_for('restaurants'))
@@ -256,7 +276,7 @@ def add(id):
      
     
     
-    context = {'id': id, 'error': error}
+    context = {'id': id, 'error': error, 'username': username}
     return render_template(f'add_menu.html', **context)
 
 @app.route('/restaurants/<id>/', methods=['POST', 'GET'])
@@ -266,6 +286,8 @@ def restaurant_page(id):
     logged_in = False
     user_critic_logged = False
     owner_logged = False
+    userid = None
+    username = None
 
     # get owner id of the restaurantcursor = g.conn.execute(f'''
     
@@ -282,6 +304,7 @@ def restaurant_page(id):
     if(session['logged_in']):
         logged_in = True
         userid = session['userid']
+        username = get_username(userid)
         if str(userid).startswith('n') or str(userid).startswith('c'):
             user_critic_logged = True
             print(f'USER critic logged in')
@@ -341,7 +364,7 @@ def restaurant_page(id):
     # get normal user reviews
     normal_reviews = []
     cursor = g.conn.execute(f'''
-        SELECT r.text,r.likes, r.rating, u.name, r.revid
+        SELECT r.text,r.likes, r.rating, u.name, u.userid, r.revid
         FROM test_reviews_gives r, Users u
         WHERE r.userid IN 
         (SELECT n.userid FROM normal n)
@@ -399,14 +422,16 @@ def restaurant_page(id):
                'menu': menu_items, 'critic_reviews': critic_reviews,
                'normal_reviews': normal_reviews, 'locations': locations,
                'user_critic_logged_in': user_critic_logged, 'owner_logged': owner_logged,
-               'logged_in': logged_in}
+               'logged_in': logged_in, 'user_id':userid, 'username': username}
     return render_template('restaurant_page.html', **context)
 
 
 @app.route('/give_review/<id>/', methods=["GET", "POST"])
 def give_review(id):
+    username = None
     if(session['logged_in']):
         userid = session['userid']
+        username = get_username(userid)
         if request.method == 'POST':
             cursor = g.conn.execute(f'''
                 SELECT COUNT(*) 
@@ -465,8 +490,11 @@ def logout():
 @app.route('/critics/<id>/')
 def critic(id):
     logged_in = False
+    username = None
     if session['logged_in']:
         logged_in = True
+        userid = session['userid']
+        username = get_username(userid)
     cursor = g.conn.execute(f'''
         SELECT u.name, c.score
         FROM test_critic as c, Users as u
@@ -507,14 +535,16 @@ def critic(id):
         critic_fav = result[1]
 
     context = {'name': critic_name, 'score': critic_score, 'logged_in': logged_in,
-               'favourite': critic_fav, 'fav_rid': critic_favrid, 'reviews': reviews}
+               'favourite': critic_fav, 'fav_rid': critic_favrid, 'reviews': reviews, 'username': username}
     return render_template('critics.html', **context)
 
 @app.route('/restaurants/<id>/update/<item>/', methods=['POST', 'GET'])
 def update_item(id, item):
 
+    username = None
     if(session['logged_in']):
         userid = session['userid']
+        username = get_username(userid)
         cursor = g.conn.execute(f'''
             SELECT *
             FROM test_restaurant_owns 
@@ -554,7 +584,7 @@ def update_item(id, item):
             desc = result[2]
             typ = result[3]
         print('type', typ)
-        context = {'name': name, 'category': category, 'cost': cost, 'desc': desc, 'type': typ}
+        context = {'name': name, 'category': category, 'cost': cost, 'desc': desc, 'type': typ, 'username': username}
         return render_template('update.html', **context)
 
 
