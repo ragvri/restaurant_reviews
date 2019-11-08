@@ -162,7 +162,7 @@ def restaurants():
     return render_template("restaurants.html", **context)
 
 
-@app.route('/login', methods=["GET", "POST"])
+@app.route('/login/', methods=["GET", "POST"])
 def login():
     error = False
     if(session['logged_in']):
@@ -185,7 +185,7 @@ def login():
     return render_template('login.html', error=error)
 
 
-@app.route('/restaurants/nearby/<lat>/<long>')
+@app.route('/nearby/<lat>/<long>/')
 def nearby(lat, long):
     logged_in = False
     if(session['logged_in']):
@@ -215,21 +215,77 @@ def nearby(lat, long):
     context = {'nearby': n_restaurants, 'logged_in': logged_in}
     return render_template('nearby.html', **context)
 
+@app.route('/add-<id>/', methods = ['POST', 'GET'])
+def add(id):
+    rest_id = id
+    error = False
+    cursor = g.conn.execute(f'''
+        SELECT r.userid 
+        FROM test_restaurant_owns r
+        WHERE r.rid = '{rest_id}' 
+    ''')
+    for result in cursor:
+        owner_id = result
+    owner_id = owner_id['userid']
+    userid = None
+    if session['logged_in']:
+        userid = session['userid']
+    # only the owner should be able to access the page
+    if str(userid)!=str(owner_id): 
+        return redirect(url_for('restaurants'))
 
-@app.route('/restaurants/<id>', methods=['POST', 'GET'])
-def another(id):
+    if request.method =='POST':
+        name = request.form['name']
+        category = request.form['category']
+        cost = request.form['cost']
+        description = request.form['description']
+        typ = request.form['type']
+
+        try: 
+            cursor  = g.conn.execute(f'''
+            INSERT INTO test_menu_item 
+            VALUES ('{name}', '{category}', {cost}, '{description}',
+            '{typ}', '{rest_id}'
+            )''') 
+        except : 
+            print(f'Unable to insert\n')
+            error = True
+            context = {'id': id, 'error': error}
+            return render_template(f'add_menu.html', **context) 
+        return redirect(f'/restaurants/{rest_id}/') 
+     
+    
+    
+    context = {'id': id, 'error': error}
+    return render_template(f'add_menu.html', **context)
+
+@app.route('/restaurants/<id>/', methods=['POST', 'GET'])
+def restaurant_page(id):
 
     # check if logged in. If yes, get the userid
     logged_in = False
     user_critic_logged = False
     owner_logged = False
+
+    # get owner id of the restaurantcursor = g.conn.execute(f'''
+    
+    cursor = g.conn.execute(f""" 
+        SELECT r.userid 
+        FROM test_restaurant_owns r
+        WHERE r.rid = '{id}' 
+    """)
+    for result in cursor:
+        owner_id = result
+    owner_id = owner_id['userid']
+    userid = None
+    
     if(session['logged_in']):
         logged_in = True
         userid = session['userid']
         if str(userid).startswith('n') or str(userid).startswith('c'):
             user_critic_logged = True
             print(f'USER critic logged in')
-        elif str(userid).startswith('r'):
+        elif str(userid) == str(owner_id):
             owner_logged = True
 
     # handle the case when a review is liked.
@@ -264,7 +320,6 @@ def another(id):
                 ) 
                 WHERE userid = '{critic_id}'
             ''')
-            print(f'Updating the score of critic')
 
     # get the name and the rid of the url
     cursor = g.conn.execute(f'''
@@ -292,6 +347,7 @@ def another(id):
         (SELECT n.userid FROM normal n)
         and r.userid = u.userid
         and r.rid ='{id}'
+        ORDER BY r.likes DESC
     ''')
     for review in cursor:
         normal_reviews.append(review)
@@ -305,6 +361,7 @@ def another(id):
         (SELECT c.userid FROM test_critic c ) and 
         r.userid = u.userid and 
         r.rid ='{id}'
+        ORDER BY r.likes DESC
     ''')
 
     for review in cursor:
@@ -314,7 +371,7 @@ def another(id):
     menu_items = []
     cursor = g.conn.execute(f'''
         SELECT m.rid, m.name, m.category, m.cost, m.descr, m.typ
-        FROM menu_item m
+        FROM test_menu_item m
         WHERE m.rid = '{id}' 
     ''')
 
@@ -346,7 +403,7 @@ def another(id):
     return render_template('restaurant_page.html', **context)
 
 
-@app.route('/give_review/<id>', methods=["GET", "POST"])
+@app.route('/give_review/<id>/', methods=["GET", "POST"])
 def give_review(id):
     if(session['logged_in']):
         userid = session['userid']
@@ -378,13 +435,13 @@ def give_review(id):
                                 GROUP BY rid)
                 WHERE rid = '{id}'
             ''')
-            return redirect(f'/restaurants/{id}')
+            return redirect(f'/restaurants/{id}/')
         else:
             return render_template('give_review.html')
     return redirect(url_for('restaurants'))
 
 
-@app.route('/logout', methods=["GET", "POST"])
+@app.route('/logout/', methods=["GET", "POST"])
 def logout():
     if(session['logged_in']):
         if request.method == "POST":
@@ -405,7 +462,7 @@ def logout():
     return redirect(url_for('restaurants'))
 
 
-@app.route('/critics/<id>')
+@app.route('/critics/<id>/')
 def critic(id):
     logged_in = False
     if session['logged_in']:
@@ -423,6 +480,7 @@ def critic(id):
         SELECT r.rid, r.name, rv.text, rv.likes, rv.rating
         FROM test_critic as c, test_reviews_gives as rv, test_restaurant_owns as r
         WHERE c.userid = rv.userid and c.userid = '{id}' and rv.rid = r.rid
+        ORDER BY (rv.likes) DESC
     ''')
 
     reviews = []
@@ -451,6 +509,53 @@ def critic(id):
     context = {'name': critic_name, 'score': critic_score, 'logged_in': logged_in,
                'favourite': critic_fav, 'fav_rid': critic_favrid, 'reviews': reviews}
     return render_template('critics.html', **context)
+
+@app.route('/restaurants/<id>/update/<item>/', methods=['POST', 'GET'])
+def update_item(id, item):
+
+    if(session['logged_in']):
+        userid = session['userid']
+        cursor = g.conn.execute(f'''
+            SELECT *
+            FROM test_restaurant_owns 
+            WHERE userid = '{userid}' and rid = '{id}'
+        ''')
+        
+        flag = 0
+        for _ in cursor:
+            flag+=1
+        if(flag == 0):
+            redirect(url_for('restaurants'))
+
+        if(request.method == 'POST'):
+            category = request.form['category']
+            cost = request.form['cost']
+            desc = request.form['description']
+            typ = request.form['type']
+
+            cursor = g.conn.execute(f'''
+                UPDATE test_menu_item
+                SET category = '{category}', cost = {cost}, descr = '{desc}', typ = '{typ}'
+                WHERE rid = '{id}' and name = '{item}'
+            ''')
+            return redirect(f'/restaurants/{id}')
+
+        cursor = g.conn.execute(f'''
+            SELECT category, cost, descr, typ 
+            FROM test_menu_item
+            WHERE rid = '{id}' and name = '{item}'
+        ''')
+        name = item
+        print(name)
+        for result in cursor:
+            print('result', result)
+            category = result[0]
+            cost = result[1]
+            desc = result[2]
+            typ = result[3]
+        print('type', typ)
+        context = {'name': name, 'category': category, 'cost': cost, 'desc': desc, 'type': typ}
+        return render_template('update.html', **context)
 
 
 if __name__ == "__main__":

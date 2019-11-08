@@ -7,13 +7,13 @@
     </style> 
     
     {% if logged_in%}
-        <a href = '/logout'>
+        <a href = '/logout/'>
             <button name = 'Logout' type ='submit' value='logout'>
                 Logout
             </button>
         </a>
     {%else%}
-        <a href = '/login'>
+        <a href = '/login/'>
             <button name = 'login' type = 'submit' value ='login'>
                 Login
             </button>
@@ -41,7 +41,7 @@
             </tr>
             {% for r in reviews %}
                 <tr>
-                    <td width ='10%'><a href = "/restaurants/{{r.rid}}">{{ r.name }}</a></td>
+                    <td width ='10%'><a href = "/restaurants/{{r.rid}}/">{{ r.name }}</a></td>
                     <td width ='40%'>{{ r.text }}</td>
                     <td align = 'center' width ='10%'>{{ r.rating }}</td>
                     <td align = 'center' width = '10%'>{{ r.likes }}</td>
@@ -49,7 +49,7 @@
             {% endfor %}
         </table>
         <h2>
-            Favourite Restaurant:  <a href = "/restaurants/{{fav_rid}}">{{ favourite}} </a>
+            Favourite Restaurant:  <a href = "/restaurants/{{fav_rid}}/">{{ favourite}} </a>
         </h2>
         
     </body>

@@ -7,13 +7,13 @@
     </style>
 
     {% if logged_in%}
-        <a href = '/logout'>
+        <a href = '/logout/'>
             <button name = 'Logout' type ='submit' value='logout'>
                 Logout
             </button>
         </a>
     {%else%}
-        <a href = '/login'>
+        <a href = '/login/'>
             <button name = 'login' type = 'submit' value ='login'>
                 Login
             </button>
@@ -38,7 +38,7 @@
                             <li>Zip:{{location['zip']}}</li>
                         </ul>
                         <p>
-                            <a href ="nearby/{{location['lat']}}/{{location['long']}}">
+                            <a href ="/nearby/{{location['lat']}}/{{location['long']}}/">
                             Get Nearby restaurants
                             </a>
                         </p>                    
@@ -49,7 +49,7 @@
 
     </br>
         {%if user_critic_logged_in%}
-            <a href = "/give_review/{{id}}">
+            <a href = "/give_review/{{id}}/">
                 <button name = 'give_review' type = 'submit' value = "{{id}}">
                     Add review 
                 </button>
@@ -103,7 +103,7 @@
                 </tr>
                 {% for review in critic_reviews%}
                 <tr>
-                    <td width='10%'><a href = "/critics/{{review['userid']}}">{{review['name']}}</a></td>
+                    <td width='10%'><a href = "/critics/{{review['userid']}}/">{{review['name']}}</a></td>
                     <td width='40%'>{{review['text']}}</td>
                     <td align = 'center' width='5%'>{{review['rating']}}</td>
                     <td align = 'center' width='5%'>{{review['likes']}}</td>
@@ -150,13 +150,11 @@
                         <td align = 'center' width = '5%'>Non-vegetarian</td>
                     {% endif %}
                     {% if owner_logged %}
-                        <form method ="POST" action = "update-{{item['name']}}">
-                            <td align = 'center' width = '5%'>
-                                <button name = 'update' type ='submit' value="update">
-                                    Update
+                            <td align = 'center' width = '5%'> 
+                                <button name = 'update' type ='submit' value="update"> 
+                                    <a href = "update/{{item['name']}}/">Update</a> 
                                 </button>
                             </td>
-                       </form>
                     {% endif%}
                    </td>
                 </tr>
@@ -164,9 +162,9 @@
             </table>
 
             {%if owner_logged%}
-                <form method = "POST" action = "add-{{id}}">
+                <form method = "POST" action = "/add-{{id}}/">
                     <button name = 'Add' type = 'submit' value ="add">
-                        ADD
+                     <a href = '/add-{{id}}/'>ADD</a>
                     </button>
                 </form>
             {%endif%}
@@ -178,7 +176,7 @@
         <ol style='font-size: 10pt'>
             {% for restaurant in similar%}
                 <li>
-                    <a href = '/restaurants/{{restaurant[0]}}'>{{restaurant[1]}}</a>
+                    <a href = '/restaurants/{{restaurant[0]}}/'>{{restaurant[1]}}</a>
                 </li>
             {% endfor %}
             </ol>      

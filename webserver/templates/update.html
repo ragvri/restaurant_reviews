@@ -1,0 +1,61 @@
+<html>
+    <style>
+        body{
+            font-size: 15pt;
+            font-family: arial;
+        }
+    </style>
+</html>
+
+<body>
+    <h1>
+        Update menu item
+    </h1>
+
+  
+        <ul>
+        <form action = " ", method="POST">
+            <li>
+                Item name: {{ name }}
+            </li>
+            <li>
+                Category <input type = "text" name = "category" value = '{{ category }}'>
+            </li>
+            <li>
+                Cost <input type = "number" step ="any" name="cost" value = '{{ cost }}' >
+            </li>
+            <li>
+                Description <br>
+                <textarea name="description" rows = '10' cols='50' >
+                    {{ desc }}
+                </textarea>
+            </li>
+            <li>
+                Type 
+                <select name ="type" >
+                        {% if type == '0' %}
+                            <option value ="0" selected>Vegan</option>
+                        {% else %}
+                            <option value ="0" >Vegan</option>
+                        {% endif %}
+                        {% if type == '1' %}
+                            <option value ="1" selected>vegetarian</option>
+                        {% else %}
+                            <option value ="1" >vegetarian</option>
+                        {% endif %}
+                        {% if type == '2' %}
+                            <option value ="2" selected>Non vegetarian</option>
+                        {% else %}
+                            <option value ="2" >Non vegetarian</option>
+                        {% endif %}
+                </select>
+            </li>
+
+            <br>
+            <button name = 'Update' type ='submit' value = 'Update'>
+                Add
+            </button>
+        </form>
+   </ul>
+    
+</body>

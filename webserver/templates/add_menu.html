@@ -1,0 +1,51 @@
+<html>
+    <style>
+        body{
+            font-size: 15pt;
+            font-family: arial;
+        }
+    </style>
+</html>
+
+<body>
+    <h1>
+        Add menu item
+    </h1>
+
+  
+        <ul>
+        <form action = " ", method="POST">
+            <li>
+                Item name <input type="text" name= "name">
+            </li>
+            <li>
+                Category <input type = "text" name = "category">
+            </li>
+            <li>
+                Cost <input type = "number" step ="any" name="cost">
+            </li>
+            <li>
+                Description <br>
+                <textarea name="description" rows = '10' cols='50'></textarea>
+            </li>
+            <li>
+                Type 
+                <select name ="type">
+                    <option value ="0">Vegan</option>
+                    <option value = "1">Vegetarian</option>
+                    <option value = "2">Non vegetarian</option>
+                </select>
+            </li>
+
+            <br>
+            <button name = 'add' type ='submit' value = 'add'>
+             Add
+            </button>
+        </form>
+
+        {% if error %}
+            <p> Unable to insert</p>
+        {% endif %}
+   </ul>
+    
+</body>
