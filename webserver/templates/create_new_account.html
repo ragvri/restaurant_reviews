@@ -1,0 +1,41 @@
+<html>
+    <style>
+        body{
+            font-size:10pt;
+            font-family: arial;
+        }
+    </style>
+</html>
+
+    <a href = '/'>
+        <button name ='Home' type = 'submit' value ='Home'>
+            Home
+        </button>
+    </a>
+    <a href = '/login/'>
+        <button name = 'login' type = 'submit' value ='login'>
+            Login
+        </button>
+    </a>
+
+
+
+<body>
+    <form action = " ", method = "POST">
+        <input type = "text" placeholder = "Name" name = "name" >
+        <input type= "password" placeholder="Password" name="password">
+        <br>
+        Create account as <br>
+        <input type="radio" name = "type" value = "user" checked> User <br>
+        <input type="radio" name ="type" value = "critic"> Critic <br>
+        <button name='create' type='submit' value='create'>
+            Create
+        </button>
+    </form>
+
+    {% if created %}
+        <br>
+        Created! Your username is {{userid}}
+        and password is {{password}}
+    {% endif %}
+</body>

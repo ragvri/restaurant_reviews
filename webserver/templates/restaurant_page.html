@@ -38,6 +38,13 @@
                 {% for location in locations%}
                     <li>
                         <ul>
+                            {% if is_critic %}
+                            <form action = " " method = "POST">
+                                <button name = 'critic_favourite' type ='submit' value="{{user_id}}/{{location['lat']}}/{{location['long']}}">
+                                        Favourite
+                                </button>
+                            </form>
+                            {% endif %}
                             <li>Capacity: {{location['capacity']}}</li>
                             <li>Building: {{location['building']}}</li>
                             <li>City: {{location['city']}}</li>

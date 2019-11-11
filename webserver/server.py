@@ -51,7 +51,7 @@ def get_username(userid):
     # returns the name of the userid
     cursor = g.conn.execute(f'''
     SELECT name
-        FROM Users
+        FROM test_users
         WHERE userid = '{userid}'
     ''')
     for result in cursor:
@@ -176,6 +176,64 @@ def restaurants():
     #
     return render_template("restaurants.html", **context)
 
+@app.route('/create_account/', methods = ['GET', 'POST'])
+def create_new_account():
+    created = False
+    if request.method == 'POST':
+        name = request.form['name']
+        password = request.form['password']
+        typ = request.form['type']
+        if str(typ).lower() == 'user':
+            cursor =  g.conn.execute(f'''
+            SELECT COUNT(*)
+            FROM test_normal
+            ''')
+            for result in cursor:
+                number = int(result[0])+1
+            print(number)
+            new_user = 'n' + str(number)
+
+            # insert new user in database
+            cursor = g.conn.execute(f"""
+            INSERT INTO test_users VALUES (
+                '{new_user}', '{name}', '{password}'
+            )
+            """)
+            cursor = g.conn.execute(f""" 
+            INSERT INTO test_normal VALUES (
+                '{new_user}'
+            )
+            """)
+
+        else: 
+            cursor = g.conn.execute('''
+            SELECT COUNT(*)
+            FROM test_critic 
+            ''')
+            for result in cursor:
+                number = int(result[0])+1
+            print(number)
+            new_user = 'c' + str(number)
+            
+            cursor = g.conn.execute(f"""
+            INSERT INTO test_users VALUES (
+                '{new_user}', '{name}', '{password}'
+            )
+            """)
+
+
+            curors = g.conn.execute(f"""
+            INSERT INTO test_critic VALUES (
+                '{new_user}', 0 
+            ) 
+            """)
+        created = True
+        context = {'userid': new_user, 'password': password, 
+        'created':created}
+        return render_template('create_new_account.html', **context)
+    context = {'created':created}
+    return render_template('create_new_account.html', **context)
+
 
 @app.route('/login/', methods=["GET", "POST"])
 def login():
@@ -186,7 +244,7 @@ def login():
         username = request.form['username']
         password = request.form['password']
         cursor = g.conn.execute(
-            "SELECT * FROM Users WHERE userid='{}' and password='{}'".format(username, password))
+            "SELECT * FROM test_users WHERE userid='{}' and password='{}'".format(username, password))
         counter = 0
         for _ in cursor:
             counter += 1
@@ -210,7 +268,7 @@ def nearby(lat, long):
         username = get_username(userid)
     cursor = g.conn.execute(f'''
         SELECT r.rid, r.name, l.building, l.capacity, l.city, l.state, l.zip, calculate_distance({lat}, {long}, l.lat, l.long, 'K') as distance
-        FROM location_isat l, test_restaurant_owns r
+        FROM test_location_isat l, test_restaurant_owns r
         WHERE l.lat!='{lat}' and l.long!='{long}' and r.rid=l.rid
         ORDER BY distance
         LIMIT 5
@@ -288,7 +346,7 @@ def restaurant_page(id):
     owner_logged = False
     userid = None
     username = None
-
+    is_critic = False
     # get owner id of the restaurantcursor = g.conn.execute(f'''
     
     cursor = g.conn.execute(f""" 
@@ -305,6 +363,8 @@ def restaurant_page(id):
         logged_in = True
         userid = session['userid']
         username = get_username(userid)
+        if str(userid).startswith('c'):
+            is_critic = True
         if str(userid).startswith('n') or str(userid).startswith('c'):
             user_critic_logged = True
             print(f'USER critic logged in')
@@ -343,7 +403,17 @@ def restaurant_page(id):
                 ) 
                 WHERE userid = '{critic_id}'
             ''')
-
+        elif 'critic_favourite' in request.form:
+            critic_id, lat, long = request.form['critic_favourite'].split('/')
+            print(f'{critic_id} {lat} {long}')
+            try: 
+                cursor = g.conn.execute(f"""
+                INSERT INTO test_favourite VALUES(
+                    '{critic_id}', {lat}, {long}
+                ) 
+            """)
+            except: 
+                print('already exists?') 
     # get the name and the rid of the url
     cursor = g.conn.execute(f'''
         SELECT r.name, r.rid FROM test_restaurant_owns r 
@@ -356,7 +426,7 @@ def restaurant_page(id):
     # get the locations of the given rid
     locations = []
     cursor = g.conn.execute(f'''
-        SELECT * from Location_isat l
+        SELECT * from test_location_isat l
         WHERE l.rid = '{id}'
     ''')
     for location in cursor:
@@ -365,9 +435,9 @@ def restaurant_page(id):
     normal_reviews = []
     cursor = g.conn.execute(f'''
         SELECT r.text,r.likes, r.rating, u.name, u.userid, r.revid
-        FROM test_reviews_gives r, Users u
+        FROM test_reviews_gives r, test_users u
         WHERE r.userid IN 
-        (SELECT n.userid FROM normal n)
+        (SELECT n.userid FROM test_normal n)
         and r.userid = u.userid
         and r.rid ='{id}'
         ORDER BY r.likes DESC
@@ -379,7 +449,7 @@ def restaurant_page(id):
     critic_reviews = []
     cursor = g.conn.execute(f'''
         SELECT r.text, r.likes, r.rating, u.name, u.userid, r.revid
-        FROM test_reviews_gives r, Users u
+        FROM test_reviews_gives r, test_users u
         WHERE r.userid IN 
         (SELECT c.userid FROM test_critic c ) and 
         r.userid = u.userid and 
@@ -422,7 +492,8 @@ def restaurant_page(id):
                'menu': menu_items, 'critic_reviews': critic_reviews,
                'normal_reviews': normal_reviews, 'locations': locations,
                'user_critic_logged_in': user_critic_logged, 'owner_logged': owner_logged,
-               'logged_in': logged_in, 'user_id':userid, 'username': username}
+               'logged_in': logged_in, 'user_id':userid, 'username': username, 
+               'is_critic': is_critic}
     return render_template('restaurant_page.html', **context)
 
 
@@ -477,7 +548,7 @@ def logout():
             userid = session['userid']
             cursor = g.conn.execute(f'''
                 SELECT name
-                FROM Users
+                FROM test_users
                 WHERE userid = '{userid}'
             ''')
             for result in cursor:
@@ -497,7 +568,7 @@ def critic(id):
         username = get_username(userid)
     cursor = g.conn.execute(f'''
         SELECT u.name, c.score
-        FROM test_critic as c, Users as u
+        FROM test_critic as c, test_users as u
         WHERE c.userid = u.userid and c.userid = '{id}'
     ''')
     for result in cursor:
@@ -526,16 +597,20 @@ def critic(id):
 
     cursor = g.conn.execute(f'''
         SELECT r.rid, r.name
-        FROM  Critic as c, Favourite as f, Location_isat as l, Restaurant_owns as r
+        FROM  test_critic as c, test_favourite as f, test_location_isat as l, test_restaurant_owns as r
         WHERE c.userid = '{id}' and  c.userid = f.userid and f.lat = l.lat and f.long = l.long and l.rid = r.rid
     ''')
 
+    fav = [] 
+    critic_has_fav = False
     for result in cursor:
-        critic_favrid = result[0]
-        critic_fav = result[1]
+        fav.append(result) 
+        critic_has_fav = True
 
     context = {'name': critic_name, 'score': critic_score, 'logged_in': logged_in,
-               'favourite': critic_fav, 'fav_rid': critic_favrid, 'reviews': reviews, 'username': username}
+               'favourite': fav, 'reviews': reviews, 'username': username,
+               'critic_has_fav':critic_has_fav
+               }
     return render_template('critics.html', **context)
 
 @app.route('/restaurants/<id>/update/<item>/', methods=['POST', 'GET'])

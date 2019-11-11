@@ -57,9 +57,15 @@
                 </tr>
             {% endfor %}
         </table>
-        <h2>
-            Favourite Restaurant:  <a href = "/restaurants/{{fav_rid}}/">{{ favourite}} </a>
-        </h2>
+        {% if critic_has_fav %}
+        <h4>
+            Favourite Restaurant:  
+        </h4>
+        {% for f in favourite %}
+        <a href = "/restaurants/{{f['rid']}}/">{{f['name']}} </a>
+        <br>
+        {% endfor %}
+        {% endif %}
         
     </body>
 </html>
