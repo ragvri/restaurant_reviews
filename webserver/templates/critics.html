@@ -63,6 +63,12 @@
         </h4>
         {% for f in favourite %}
         <a href = "/restaurants/{{f['rid']}}/">{{f['name']}} </a>
+        <ul>
+            <li>Building: {{f['building']}}</li>
+            <li>City: {{f['city']}}</li>
+            <li>State: {{f['state']}}</li>
+            <li>Zip: {{f['zip']}}</li>
+        </ul>
         <br>
         {% endfor %}
         {% endif %}

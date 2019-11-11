@@ -596,7 +596,7 @@ def critic(id):
         reviews.append(review(result))
 
     cursor = g.conn.execute(f'''
-        SELECT r.rid, r.name
+        SELECT r.rid, r.name, l.building, l.state, l.city, l.zip
         FROM  critic as c, favourite as f, location_isat as l, restaurant_owns as r
         WHERE c.userid = '{id}' and  c.userid = f.userid and f.lat = l.lat and f.long = l.long and l.rid = r.rid
     ''')
