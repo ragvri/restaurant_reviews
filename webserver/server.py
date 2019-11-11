@@ -51,7 +51,7 @@ def get_username(userid):
     # returns the name of the userid
     cursor = g.conn.execute(f'''
     SELECT name
-        FROM test_users
+        FROM users
         WHERE userid = '{userid}'
     ''')
     for result in cursor:
@@ -124,7 +124,7 @@ def restaurants():
     if request.method == 'POST' and request.form["button"] == 'Search':
         search_name = request.form['name']  # name of the search query
         cursor = g.conn.execute(f"""
-        SELECT * FROM test_restaurant_owns r
+        SELECT * FROM restaurant_owns r
         WHERE LOWER(r.name) LIKE '%%{search_name}%%'
         ORDER BY lower(r.name) ASC 
         """
@@ -136,7 +136,7 @@ def restaurants():
 
     else:
         cursor = g.conn.execute('''
-        SELECT * FROM test_restaurant_owns r
+        SELECT * FROM restaurant_owns r
         ORDER BY lower(r.name) ASC 
         ''')
         names = []
@@ -186,7 +186,7 @@ def create_new_account():
         if str(typ).lower() == 'user':
             cursor =  g.conn.execute(f'''
             SELECT COUNT(*)
-            FROM test_normal
+            FROM normal
             ''')
             for result in cursor:
                 number = int(result[0])+1
@@ -195,12 +195,12 @@ def create_new_account():
 
             # insert new user in database
             cursor = g.conn.execute(f"""
-            INSERT INTO test_users VALUES (
+            INSERT INTO users VALUES (
                 '{new_user}', '{name}', '{password}'
             )
             """)
             cursor = g.conn.execute(f""" 
-            INSERT INTO test_normal VALUES (
+            INSERT INTO normal VALUES (
                 '{new_user}'
             )
             """)
@@ -208,7 +208,7 @@ def create_new_account():
         else: 
             cursor = g.conn.execute('''
             SELECT COUNT(*)
-            FROM test_critic 
+            FROM critic 
             ''')
             for result in cursor:
                 number = int(result[0])+1
@@ -216,14 +216,14 @@ def create_new_account():
             new_user = 'c' + str(number)
             
             cursor = g.conn.execute(f"""
-            INSERT INTO test_users VALUES (
+            INSERT INTO users VALUES (
                 '{new_user}', '{name}', '{password}'
             )
             """)
 
 
             curors = g.conn.execute(f"""
-            INSERT INTO test_critic VALUES (
+            INSERT INTO critic VALUES (
                 '{new_user}', 0 
             ) 
             """)
@@ -244,7 +244,7 @@ def login():
         username = request.form['username']
         password = request.form['password']
         cursor = g.conn.execute(
-            "SELECT * FROM test_users WHERE userid='{}' and password='{}'".format(username, password))
+            "SELECT * FROM users WHERE userid='{}' and password='{}'".format(username, password))
         counter = 0
         for _ in cursor:
             counter += 1
@@ -268,7 +268,7 @@ def nearby(lat, long):
         username = get_username(userid)
     cursor = g.conn.execute(f'''
         SELECT r.rid, r.name, l.building, l.capacity, l.city, l.state, l.zip, calculate_distance({lat}, {long}, l.lat, l.long, 'K') as distance
-        FROM test_location_isat l, test_restaurant_owns r
+        FROM location_isat l, restaurant_owns r
         WHERE l.lat!='{lat}' and l.long!='{long}' and r.rid=l.rid
         ORDER BY distance
         LIMIT 5
@@ -297,7 +297,7 @@ def add(id):
     error = False
     cursor = g.conn.execute(f'''
         SELECT r.userid 
-        FROM test_restaurant_owns r
+        FROM restaurant_owns r
         WHERE r.rid = '{rest_id}' 
     ''')
     for result in cursor:
@@ -321,7 +321,7 @@ def add(id):
 
         try: 
             cursor  = g.conn.execute(f'''
-            INSERT INTO test_menu_item 
+            INSERT INTO menu_item 
             VALUES ('{name}', '{category}', {cost}, '{description}',
             '{typ}', '{rest_id}'
             )''') 
@@ -351,7 +351,7 @@ def restaurant_page(id):
     
     cursor = g.conn.execute(f""" 
         SELECT r.userid 
-        FROM test_restaurant_owns r
+        FROM restaurant_owns r
         WHERE r.rid = '{id}' 
     """)
     for result in cursor:
@@ -378,7 +378,7 @@ def restaurant_page(id):
             revid = request.form['normal_like']
             print(f'revid is {revid}')
             cursor = g.conn.execute(f'''
-                UPDATE test_reviews_gives   
+                UPDATE reviews_gives   
                 SET likes = likes+1
                 WHERE revid = '{revid}' 
             ''')
@@ -386,17 +386,17 @@ def restaurant_page(id):
             critic_id, revid = request.form['critic_like'].split('-')
             print(f'critic_id: {critic_id}, revid:{revid}')
             cursor = g.conn.execute(f'''
-                UPDATE test_reviews_gives 
+                UPDATE reviews_gives 
                 SET likes = likes+1
                 WHERE revid = '{revid}' 
             ''')
             # update the average score of the critc
             cursor = g.conn.execute(f'''
-                UPDATE test_critic
+                UPDATE critic
                 SET score = 
                 (
                     SELECT round(avg(t.likes),2)
-                    FROM test_critic c, test_reviews_gives t
+                    FROM critic c, reviews_gives t
                     where t.userid = c.userid and 
                     c.userid = '{critic_id}'
                     group by c.userid 
@@ -408,7 +408,7 @@ def restaurant_page(id):
             print(f'{critic_id} {lat} {long}')
             try: 
                 cursor = g.conn.execute(f"""
-                INSERT INTO test_favourite VALUES(
+                INSERT INTO favourite VALUES(
                     '{critic_id}', {lat}, {long}
                 ) 
             """)
@@ -416,7 +416,7 @@ def restaurant_page(id):
                 print('already exists?') 
     # get the name and the rid of the url
     cursor = g.conn.execute(f'''
-        SELECT r.name, r.rid FROM test_restaurant_owns r 
+        SELECT r.name, r.rid FROM restaurant_owns r 
         WHERE r.rid =  '{id}'
         ''')
     for result in cursor:
@@ -426,7 +426,7 @@ def restaurant_page(id):
     # get the locations of the given rid
     locations = []
     cursor = g.conn.execute(f'''
-        SELECT * from test_location_isat l
+        SELECT * from location_isat l
         WHERE l.rid = '{id}'
     ''')
     for location in cursor:
@@ -435,9 +435,9 @@ def restaurant_page(id):
     normal_reviews = []
     cursor = g.conn.execute(f'''
         SELECT r.text,r.likes, r.rating, u.name, u.userid, r.revid
-        FROM test_reviews_gives r, test_users u
+        FROM reviews_gives r, users u
         WHERE r.userid IN 
-        (SELECT n.userid FROM test_normal n)
+        (SELECT n.userid FROM normal n)
         and r.userid = u.userid
         and r.rid ='{id}'
         ORDER BY r.likes DESC
@@ -449,9 +449,9 @@ def restaurant_page(id):
     critic_reviews = []
     cursor = g.conn.execute(f'''
         SELECT r.text, r.likes, r.rating, u.name, u.userid, r.revid
-        FROM test_reviews_gives r, test_users u
+        FROM reviews_gives r, users u
         WHERE r.userid IN 
-        (SELECT c.userid FROM test_critic c ) and 
+        (SELECT c.userid FROM critic c ) and 
         r.userid = u.userid and 
         r.rid ='{id}'
         ORDER BY r.likes DESC
@@ -464,7 +464,7 @@ def restaurant_page(id):
     menu_items = []
     cursor = g.conn.execute(f'''
         SELECT m.rid, m.name, m.category, m.cost, m.descr, m.typ
-        FROM test_menu_item m
+        FROM menu_item m
         WHERE m.rid = '{id}' 
     ''')
 
@@ -475,12 +475,12 @@ def restaurant_page(id):
     similar_restaurants = []
     cursor = g.conn.execute(f'''
         SELECT s1.rid2, r1.name 
-        from similar_rest s1, test_restaurant_owns r1 
+        from similar_rest s1, restaurant_owns r1 
         WHERE s1.rid1 = '{id}' 
         and r1.rid = s1.rid2
         UNION 
         SELECT s2.rid1, r2.name 
-        from similar_rest s2, test_restaurant_owns r2 
+        from similar_rest s2, restaurant_owns r2 
         WHERE s2.rid2 = '{id}'
         and r2.rid = s2.rid1
     ''')
@@ -503,10 +503,12 @@ def give_review(id):
     if(session['logged_in']):
         userid = session['userid']
         username = get_username(userid)
+        if userid.startswith('r'):
+            return redirect(url_for('restaurants'))
         if request.method == 'POST':
             cursor = g.conn.execute(f'''
                 SELECT COUNT(*) 
-                FROM test_reviews_gives
+                FROM reviews_gives
             ''')
 
             for results in cursor:
@@ -515,18 +517,18 @@ def give_review(id):
             text = request.form['text']
             rating = request.form['rating']
             cursor = g.conn.execute(f'''
-                INSERT INTO test_reviews_gives
+                INSERT INTO reviews_gives
                 VALUES ('{revid}', '{text}', 0, {rating}, '{userid}', '{id}')
             ''')
 
             cursor = g.conn.execute(f'''
-                UPDATE test_restaurant_owns
+                UPDATE restaurant_owns
                 SET u_rating = (SELECT ROUND(AVG(rating), 2)
-                                FROM test_reviews_gives
+                                FROM reviews_gives
                                 WHERE rid='{id}' and userid like 'n%%' 
                                 GROUP BY rid),
                 c_rating = (SELECT ROUND(AVG(rating), 2)
-                                FROM test_reviews_gives
+                                FROM reviews_gives
                                 WHERE rid='{id}' and userid like 'c%%' 
                                 GROUP BY rid)
                 WHERE rid = '{id}'
@@ -548,7 +550,7 @@ def logout():
             userid = session['userid']
             cursor = g.conn.execute(f'''
                 SELECT name
-                FROM test_users
+                FROM users
                 WHERE userid = '{userid}'
             ''')
             for result in cursor:
@@ -568,7 +570,7 @@ def critic(id):
         username = get_username(userid)
     cursor = g.conn.execute(f'''
         SELECT u.name, c.score
-        FROM test_critic as c, test_users as u
+        FROM critic as c, users as u
         WHERE c.userid = u.userid and c.userid = '{id}'
     ''')
     for result in cursor:
@@ -577,7 +579,7 @@ def critic(id):
 
     cursor = g.conn.execute(f'''
         SELECT r.rid, r.name, rv.text, rv.likes, rv.rating
-        FROM test_critic as c, test_reviews_gives as rv, test_restaurant_owns as r
+        FROM critic as c, reviews_gives as rv, restaurant_owns as r
         WHERE c.userid = rv.userid and c.userid = '{id}' and rv.rid = r.rid
         ORDER BY (rv.likes) DESC
     ''')
@@ -597,7 +599,7 @@ def critic(id):
 
     cursor = g.conn.execute(f'''
         SELECT r.rid, r.name
-        FROM  test_critic as c, test_favourite as f, test_location_isat as l, test_restaurant_owns as r
+        FROM  critic as c, favourite as f, location_isat as l, restaurant_owns as r
         WHERE c.userid = '{id}' and  c.userid = f.userid and f.lat = l.lat and f.long = l.long and l.rid = r.rid
     ''')
 
@@ -622,15 +624,16 @@ def update_item(id, item):
         username = get_username(userid)
         cursor = g.conn.execute(f'''
             SELECT *
-            FROM test_restaurant_owns 
+            FROM restaurant_owns 
             WHERE userid = '{userid}' and rid = '{id}'
         ''')
         
         flag = 0
         for _ in cursor:
             flag+=1
+        print(flag)
         if(flag == 0):
-            redirect(url_for('restaurants'))
+            return redirect(url_for('restaurants'))
 
         if(request.method == 'POST'):
             category = request.form['category']
@@ -639,7 +642,7 @@ def update_item(id, item):
             typ = request.form['type']
 
             cursor = g.conn.execute(f'''
-                UPDATE test_menu_item
+                UPDATE menu_item
                 SET category = '{category}', cost = {cost}, descr = '{desc}', typ = '{typ}'
                 WHERE rid = '{id}' and name = '{item}'
             ''')
@@ -647,7 +650,7 @@ def update_item(id, item):
 
         cursor = g.conn.execute(f'''
             SELECT category, cost, descr, typ 
-            FROM test_menu_item
+            FROM menu_item
             WHERE rid = '{id}' and name = '{item}'
         ''')
         name = item
