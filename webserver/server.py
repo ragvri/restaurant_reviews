@@ -190,7 +190,6 @@ def create_new_account():
             ''')
             for result in cursor:
                 number = int(result[0])+1
-            print(number)
             new_user = 'n' + str(number)
 
             # insert new user in database
@@ -212,7 +211,6 @@ def create_new_account():
             ''')
             for result in cursor:
                 number = int(result[0])+1
-            print(number)
             new_user = 'c' + str(number)
             
             cursor = g.conn.execute(f"""
@@ -367,7 +365,7 @@ def restaurant_page(id):
             is_critic = True
         if str(userid).startswith('n') or str(userid).startswith('c'):
             user_critic_logged = True
-            print(f'USER critic logged in')
+            # print(f'USER critic logged in')
         elif str(userid) == str(owner_id):
             owner_logged = True
 
@@ -376,7 +374,7 @@ def restaurant_page(id):
         # print(f"{request.form['normal_like']} this is the data")
         if 'normal_like' in request.form:
             revid = request.form['normal_like']
-            print(f'revid is {revid}')
+            # print(f'revid is {revid}')
             cursor = g.conn.execute(f'''
                 UPDATE reviews_gives   
                 SET likes = likes+1
@@ -384,7 +382,7 @@ def restaurant_page(id):
             ''')
         elif 'critic_like' in request.form:
             critic_id, revid = request.form['critic_like'].split('-')
-            print(f'critic_id: {critic_id}, revid:{revid}')
+            # print(f'critic_id: {critic_id}, revid:{revid}')
             cursor = g.conn.execute(f'''
                 UPDATE reviews_gives 
                 SET likes = likes+1
@@ -405,7 +403,7 @@ def restaurant_page(id):
             ''')
         elif 'critic_favourite' in request.form:
             critic_id, lat, long = request.form['critic_favourite'].split('/')
-            print(f'{critic_id} {lat} {long}')
+            # print(f'{critic_id} {lat} {long}')
             try: 
                 cursor = g.conn.execute(f"""
                 INSERT INTO favourite VALUES(
@@ -631,7 +629,7 @@ def update_item(id, item):
         flag = 0
         for _ in cursor:
             flag+=1
-        print(flag)
+        # print(flag)
         if(flag == 0):
             return redirect(url_for('restaurants'))
 
@@ -654,14 +652,14 @@ def update_item(id, item):
             WHERE rid = '{id}' and name = '{item}'
         ''')
         name = item
-        print(name)
+        # print(name)
         for result in cursor:
-            print('result', result)
+            # print('result', result)
             category = result[0]
             cost = result[1]
             desc = result[2]
             typ = result[3]
-        print('type', typ)
+        # print('type', typ)
         context = {'name': name, 'category': category, 'cost': cost, 'desc': desc, 'type': typ, 'username': username}
         return render_template('update.html', **context)
 
@@ -688,7 +686,7 @@ if __name__ == "__main__":
         """
 
         # HARD CODED. REMOVE AFTER DEBUGGING
-        debug = True
+        # debug = True
         HOST, PORT = host, port
         print("running on %s:%d" % (HOST, PORT))
         app.run(host=HOST, port=PORT, debug=debug, threaded=threaded)
