@@ -49,11 +49,11 @@ engine.execute(
 
 def get_username(userid):
     # returns the name of the userid
-    cursor = g.conn.execute(f'''
+    cursor = g.conn.execute('''
     SELECT name
         FROM users
-        WHERE userid = '{userid}'
-    ''')
+        WHERE userid = %(id)s
+    ''', {'id': str(userid)})
     for result in cursor:
         name = result[0]
     return name
@@ -123,11 +123,13 @@ def restaurants():
 
     if request.method == 'POST' and request.form["button"] == 'Search':
         search_name = request.form['name']  # name of the search query
-        cursor = g.conn.execute(f"""
+        search_name = str(search_name).lower()
+        search_name = '%' + search_name + '%'
+        cursor = g.conn.execute("""
         SELECT * FROM restaurant_owns r
-        WHERE LOWER(r.name) LIKE '%%{search_name}%%'
+        WHERE LOWER(r.name) LIKE %(search_name)s
         ORDER BY lower(r.name) ASC 
-        """
+        """, {'search_name':search_name}
                                 )
         names = []
         for result in cursor:
@@ -193,16 +195,16 @@ def create_new_account():
             new_user = 'n' + str(number)
 
             # insert new user in database
-            cursor = g.conn.execute(f"""
+            cursor = g.conn.execute("""
             INSERT INTO users VALUES (
-                '{new_user}', '{name}', '{password}'
+                %(new_user)s, %(name)s, %(password)s
             )
-            """)
-            cursor = g.conn.execute(f""" 
+            """, {'new_user': str(new_user), 'name': str(name), 'password': str(password)})
+            cursor = g.conn.execute(""" 
             INSERT INTO normal VALUES (
-                '{new_user}'
+                %(new_user)s
             )
-            """)
+            """, {'new_user': str(new_user)})
 
         else: 
             cursor = g.conn.execute('''
@@ -213,18 +215,18 @@ def create_new_account():
                 number = int(result[0])+1
             new_user = 'c' + str(number)
             
-            cursor = g.conn.execute(f"""
+            cursor = g.conn.execute("""
             INSERT INTO users VALUES (
-                '{new_user}', '{name}', '{password}'
+                %(new_user)s , %(name)s, %(password)s
             )
-            """)
+            """, {'new_user':str(new_user), 'name':str(name), 'password':str(password)})
 
 
-            curors = g.conn.execute(f"""
+            curors = g.conn.execute("""
             INSERT INTO critic VALUES (
-                '{new_user}', 0 
+                %(new_user)s, 0 
             ) 
-            """)
+            """, {'new_user':str(new_user)})
         created = True
         context = {'userid': new_user, 'password': password, 
         'created':created}
@@ -242,7 +244,8 @@ def login():
         username = request.form['username']
         password = request.form['password']
         cursor = g.conn.execute(
-            "SELECT * FROM users WHERE userid='{}' and password='{}'".format(username, password))
+            "SELECT * FROM users WHERE userid=%(username)s and password=%(password)s", 
+            {'username':str(username), 'password':str(password)})
         counter = 0
         for _ in cursor:
             counter += 1
@@ -264,13 +267,13 @@ def nearby(lat, long):
         logged_in = True
         userid = session['userid']
         username = get_username(userid)
-    cursor = g.conn.execute(f'''
-        SELECT r.rid, r.name, l.building, l.capacity, l.city, l.state, l.zip, calculate_distance({lat}, {long}, l.lat, l.long, 'K') as distance
+    cursor = g.conn.execute('''
+        SELECT r.rid, r.name, l.building, l.capacity, l.city, l.state, l.zip, calculate_distance(%(lat)s, %(long)s, l.lat, l.long, 'K') as distance
         FROM location_isat l, restaurant_owns r
-        WHERE l.lat!='{lat}' and l.long!='{long}' and r.rid=l.rid
+        WHERE l.lat!=%(lat)s and l.long!=%(long)s and r.rid=l.rid
         ORDER BY distance
         LIMIT 5
-    ''')
+    ''', {'lat':lat, 'long':long})
 
     class restaurant():
         def __init__(self, data):
@@ -293,11 +296,11 @@ def nearby(lat, long):
 def add(id):
     rest_id = id
     error = False
-    cursor = g.conn.execute(f'''
+    cursor = g.conn.execute('''
         SELECT r.userid 
         FROM restaurant_owns r
-        WHERE r.rid = '{rest_id}' 
-    ''')
+        WHERE r.rid = %(rest_id)s 
+    ''', {'rest_id': str(rest_id)})
     for result in cursor:
         owner_id = result
     owner_id = owner_id['userid']
@@ -314,15 +317,19 @@ def add(id):
         name = request.form['name']
         category = request.form['category']
         cost = request.form['cost']
+        # cost = float(cost)
         description = request.form['description']
         typ = request.form['type']
 
         try: 
-            cursor  = g.conn.execute(f'''
+            cursor  = g.conn.execute('''
             INSERT INTO menu_item 
-            VALUES ('{name}', '{category}', {cost}, '{description}',
-            '{typ}', '{rest_id}'
-            )''') 
+            VALUES (%(name)s, %(category)s, %(cost)s, %(description)s,
+            %(type)s, %(rest_id)s 
+            )''', 
+            {'name':str(name), 'category':str(category), 'cost':cost, 
+            'description':str(description), 'type':str(typ), 'rest_id':str(rest_id)} 
+            ) 
         except : 
             print(f'Unable to insert\n')
             error = True
@@ -347,11 +354,12 @@ def restaurant_page(id):
     is_critic = False
     # get owner id of the restaurantcursor = g.conn.execute(f'''
     
-    cursor = g.conn.execute(f""" 
+    cursor = g.conn.execute(""" 
         SELECT r.userid 
         FROM restaurant_owns r
-        WHERE r.rid = '{id}' 
-    """)
+        WHERE r.rid = %(id)s 
+    """, 
+    {'id':str(id)})
     for result in cursor:
         owner_id = result
     owner_id = owner_id['userid']
@@ -375,113 +383,134 @@ def restaurant_page(id):
         if 'normal_like' in request.form:
             revid = request.form['normal_like']
             # print(f'revid is {revid}')
-            cursor = g.conn.execute(f'''
+            cursor = g.conn.execute('''
                 UPDATE reviews_gives   
                 SET likes = likes+1
-                WHERE revid = '{revid}' 
-            ''')
+                WHERE revid = %(revid)s 
+            ''', 
+            {'revid':str(revid)}  
+            )
         elif 'critic_like' in request.form:
             critic_id, revid = request.form['critic_like'].split('-')
             # print(f'critic_id: {critic_id}, revid:{revid}')
-            cursor = g.conn.execute(f'''
+            cursor = g.conn.execute('''
                 UPDATE reviews_gives 
                 SET likes = likes+1
-                WHERE revid = '{revid}' 
-            ''')
+                WHERE revid = %(revid)s 
+            ''', 
+            {'revid':str(revid)} 
+            )
             # update the average score of the critc
-            cursor = g.conn.execute(f'''
+            cursor = g.conn.execute('''
                 UPDATE critic
                 SET score = 
                 (
                     SELECT round(avg(t.likes),2)
                     FROM critic c, reviews_gives t
                     where t.userid = c.userid and 
-                    c.userid = '{critic_id}'
+                    c.userid = %(critic_id)s
                     group by c.userid 
                 ) 
-                WHERE userid = '{critic_id}'
-            ''')
+                WHERE userid = %(critic_id)s
+            ''', 
+            {'critic_id':str(critic_id)} 
+            )
+
         elif 'critic_favourite' in request.form:
             critic_id, lat, long = request.form['critic_favourite'].split('/')
             # print(f'{critic_id} {lat} {long}')
             try: 
-                cursor = g.conn.execute(f"""
+                cursor = g.conn.execute("""
                 INSERT INTO favourite VALUES(
-                    '{critic_id}', {lat}, {long}
+                    %(critic_id)s, %(lat)s, %(long)s
                 ) 
-            """)
+            """, 
+            {'critic_id':str(critic_id), 'lat':long, 'long':long}  
+            )
             except: 
                 print('already exists?') 
     # get the name and the rid of the url
-    cursor = g.conn.execute(f'''
+    cursor = g.conn.execute('''
         SELECT r.name, r.rid FROM restaurant_owns r 
-        WHERE r.rid =  '{id}'
-        ''')
+        WHERE r.rid =  %(id)s
+        ''', 
+        {'id':str(id)} 
+        )
     for result in cursor:
         restaurant_name = result[0]
         restaurant_id = result[1]
 
     # get the locations of the given rid
     locations = []
-    cursor = g.conn.execute(f'''
+    cursor = g.conn.execute('''
         SELECT * from location_isat l
-        WHERE l.rid = '{id}'
-    ''')
+        WHERE l.rid = %(id)s
+    ''', 
+    {'id':str(id)} 
+    )
     for location in cursor:
         locations.append(location)
     # get normal user reviews
     normal_reviews = []
-    cursor = g.conn.execute(f'''
+    cursor = g.conn.execute('''
         SELECT r.text,r.likes, r.rating, u.name, u.userid, r.revid
         FROM reviews_gives r, users u
         WHERE r.userid IN 
         (SELECT n.userid FROM normal n)
         and r.userid = u.userid
-        and r.rid ='{id}'
+        and r.rid =%(id)s
         ORDER BY r.likes DESC
-    ''')
+    ''', 
+    {'id':str(id)} 
+    )
     for review in cursor:
         normal_reviews.append(review)
 
     # get critic reviews
     critic_reviews = []
-    cursor = g.conn.execute(f'''
+    cursor = g.conn.execute('''
         SELECT r.text, r.likes, r.rating, u.name, u.userid, r.revid
         FROM reviews_gives r, users u
         WHERE r.userid IN 
         (SELECT c.userid FROM critic c ) and 
         r.userid = u.userid and 
-        r.rid ='{id}'
+        r.rid =%(id)s
         ORDER BY r.likes DESC
-    ''')
+    ''', 
+    {'id':str(id)} 
+    )
 
     for review in cursor:
         critic_reviews.append(review)
 
     # get menu items
     menu_items = []
-    cursor = g.conn.execute(f'''
+    cursor = g.conn.execute('''
         SELECT m.rid, m.name, m.category, m.cost, m.descr, m.typ
         FROM menu_item m
-        WHERE m.rid = '{id}' 
-    ''')
+        WHERE m.rid = %(id)s
+    ''', 
+    {'id':str(id)} 
+    )
 
     for item in cursor:
         menu_items.append(item)
 
     # get similar restaurants
     similar_restaurants = []
-    cursor = g.conn.execute(f'''
+    cursor = g.conn.execute('''
         SELECT s1.rid2, r1.name 
         from similar_rest s1, restaurant_owns r1 
-        WHERE s1.rid1 = '{id}' 
+        WHERE s1.rid1 = %(id)s 
         and r1.rid = s1.rid2
         UNION 
         SELECT s2.rid1, r2.name 
         from similar_rest s2, restaurant_owns r2 
-        WHERE s2.rid2 = '{id}'
+        WHERE s2.rid2 = %(id)s
         and r2.rid = s2.rid1
-    ''')
+    ''', 
+    {'id':str(id)} 
+    )
 
     for restaurant in cursor:
         similar_restaurants.append(restaurant)
@@ -504,7 +533,7 @@ def give_review(id):
         if userid.startswith('r'):
             return redirect(url_for('restaurants'))
         if request.method == 'POST':
-            cursor = g.conn.execute(f'''
+            cursor = g.conn.execute('''
                 SELECT COUNT(*) 
                 FROM reviews_gives
             ''')
@@ -514,23 +543,27 @@ def give_review(id):
 
             text = request.form['text']
             rating = request.form['rating']
-            cursor = g.conn.execute(f'''
+            cursor = g.conn.execute('''
                 INSERT INTO reviews_gives
-                VALUES ('{revid}', '{text}', 0, {rating}, '{userid}', '{id}')
-            ''')
+                VALUES (%(revid)s, %(text)s, 0, %(rating)s, %(userid)s, %(id)s)
+            ''', 
+            {'revid':str(revid), 'text':str(text), 'rating':rating, 'userid':str(userid), 'id':str(id)} 
+            )
 
-            cursor = g.conn.execute(f'''
+            cursor = g.conn.execute('''
                 UPDATE restaurant_owns
                 SET u_rating = (SELECT ROUND(AVG(rating), 2)
                                 FROM reviews_gives
-                                WHERE rid='{id}' and userid like 'n%%' 
+                                WHERE rid=%(id)s and userid like 'n%%' 
                                 GROUP BY rid),
                 c_rating = (SELECT ROUND(AVG(rating), 2)
                                 FROM reviews_gives
-                                WHERE rid='{id}' and userid like 'c%%' 
+                                WHERE rid=%(id)s and userid like 'c%%' 
                                 GROUP BY rid)
-                WHERE rid = '{id}'
-            ''')
+                WHERE rid = %(id)s
+            ''', 
+            {'id':str(id)} 
+            )
             return redirect(f'/restaurants/{id}/')
         else:
             return render_template('give_review.html')
@@ -546,11 +579,13 @@ def logout():
             return redirect(url_for('restaurants'))
         else:
             userid = session['userid']
-            cursor = g.conn.execute(f'''
+            cursor = g.conn.execute('''
                 SELECT name
                 FROM users
-                WHERE userid = '{userid}'
-            ''')
+                WHERE userid = %(userid)s
+            ''', 
+            {'userid':str(userid)} 
+            )
             for result in cursor:
                 name = result[0]
             return render_template('logout.html', name=name)
@@ -566,21 +601,25 @@ def critic(id):
         logged_in = True
         userid = session['userid']
         username = get_username(userid)
-    cursor = g.conn.execute(f'''
+    cursor = g.conn.execute('''
         SELECT u.name, c.score
         FROM critic as c, users as u
-        WHERE c.userid = u.userid and c.userid = '{id}'
-    ''')
+        WHERE c.userid = u.userid and c.userid = %(id)s
+    ''', 
+    {'id':str(id)} 
+    )
     for result in cursor:
         critic_name = result[0]
         critic_score = result[1]
 
-    cursor = g.conn.execute(f'''
+    cursor = g.conn.execute('''
         SELECT r.rid, r.name, rv.text, rv.likes, rv.rating
         FROM critic as c, reviews_gives as rv, restaurant_owns as r
-        WHERE c.userid = rv.userid and c.userid = '{id}' and rv.rid = r.rid
+        WHERE c.userid = rv.userid and c.userid = %(id)s and rv.rid = r.rid
         ORDER BY (rv.likes) DESC
-    ''')
+    ''', 
+    {'id':str(id)} 
+    )
 
     reviews = []
 
@@ -595,11 +634,13 @@ def critic(id):
     for result in cursor:
         reviews.append(review(result))
 
-    cursor = g.conn.execute(f'''
+    cursor = g.conn.execute('''
         SELECT r.rid, r.name, l.building, l.state, l.city, l.zip
         FROM  critic as c, favourite as f, location_isat as l, restaurant_owns as r
-        WHERE c.userid = '{id}' and  c.userid = f.userid and f.lat = l.lat and f.long = l.long and l.rid = r.rid
-    ''')
+        WHERE c.userid = %(id)s and  c.userid = f.userid and f.lat = l.lat and f.long = l.long and l.rid = r.rid
+    ''', 
+    {'id':str(id)} 
+    )
 
     fav = [] 
     critic_has_fav = False
@@ -620,11 +661,13 @@ def update_item(id, item):
     if(session['logged_in']):
         userid = session['userid']
         username = get_username(userid)
-        cursor = g.conn.execute(f'''
+        cursor = g.conn.execute('''
             SELECT *
             FROM restaurant_owns 
-            WHERE userid = '{userid}' and rid = '{id}'
-        ''')
+            WHERE userid = %(userid)s and rid = %(id)s 
+        ''', 
+        {'userid':str(userid), 'id':str(id)}
+        )
         
         flag = 0
         for _ in cursor:
@@ -639,18 +682,23 @@ def update_item(id, item):
             desc = request.form['description']
             typ = request.form['type']
 
-            cursor = g.conn.execute(f'''
+            cursor = g.conn.execute('''
                 UPDATE menu_item
-                SET category = '{category}', cost = {cost}, descr = '{desc}', typ = '{typ}'
-                WHERE rid = '{id}' and name = '{item}'
-            ''')
+                SET category = %(category)s, cost = %(cost)s, descr = %(desc)s, typ = %(typ)s
+                WHERE rid = %(rid)s and name = %(item)s
+            ''', 
+            {'category':str(category), 'cost':cost, 'desc':str(desc),'typ':str(typ), 
+            'rid':str(id), 'item':str(item) } 
+            )
             return redirect(f'/restaurants/{id}')
 
-        cursor = g.conn.execute(f'''
+        cursor = g.conn.execute('''
             SELECT category, cost, descr, typ 
             FROM menu_item
-            WHERE rid = '{id}' and name = '{item}'
-        ''')
+            WHERE rid = %(id)s and name = %(item)s
+        ''', 
+        {'id':str(id), 'item':str(item)} 
+        )
         name = item
         # print(name)
         for result in cursor:
@@ -686,7 +734,7 @@ if __name__ == "__main__":
         """
 
         # HARD CODED. REMOVE AFTER DEBUGGING
-        # debug = True
+        debug = True
         HOST, PORT = host, port
         print("running on %s:%d" % (HOST, PORT))
         app.run(host=HOST, port=PORT, debug=debug, threaded=threaded)
