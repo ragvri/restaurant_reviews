@@ -1,12 +1,30 @@
-# Project 1 Group 5
+# Restaurant Reviews Website using Flask and Jinja
 
-## Manik Goyal (mg4106) and Raghav Jindal (rj2571)
+## Requirements
 
-Postgresql Account - mg4106
+1) Postgres account
+2) Flask
+3) Jinja
 
-The URL of the webiste - [http://35.231.187.42:8111/](http://35.231.187.42:8111/)
+## INSTALLTION
 
-## Features of our project Implemented
+1) Postgres: [Link](https://www.postgresqltutorial.com/install-postgresql/)
+2) Flask: `pip install -U Flask`
+3) Jinja: `pip install -U Jinja2`
+
+*Note:* the link for postgres installation might be outdated now. Yes, I know, I should always use the official documentation.
+
+## Running
+
+See [this](https://www.postgresqltutorial.com/connect-to-postgresql-database/) for running the psql (read postgreSQL) server. I personally made use of google cloud.
+(Had some free credits available).
+
+To run locally:
+   ` python server.py`
+
+Go to <http://localhost:8111> in your browser.
+
+## Features  Implemented
 
 * __Restaurant Rating and Review__ - Each Restaurant has its own page with both critic reviews and user reviews. Along with the menu of the restaurant.
 * __Likes__ - The website gives the option to users to like reviews (other than his own). This directly affects the critics score.
@@ -18,21 +36,15 @@ The URL of the webiste - [http://35.231.187.42:8111/](http://35.231.187.42:8111/
 * __Favourite__ - Critics have the ability to mark a restaurant locaton as their favourite on the restaurant page. These favourite restaurant's are shown on the citics page
 * __Restaurant Owner__ - Each Restaurant owner gets their own login account through which they can update the restaurants menu item or add new menu items.
 
-## Feature Modified from proposal
-
-* __Nearby Restaurant__ - We did not implement nearby restaurants based on user's current location since, it was difficult to test. Instead we modified it as top 5 nearby restaurants to a given restaurant.
-  
-## New Feature Added
-
 * __Search__ - We provide a name based search on the home page.
 
 Q) Briefly describe two of the web pages that require (what you consider) the most interesting database operations in terms of what the pages are used for, how the page is related to the database operations (e.g., inputs on the page are used in such and such a way to produce database operations that do such and such), and why you think they are interesting.
 
-## The two web pages are as follows
+## Two interesting web pages are as follows
 
-1. [http://35.231.187.42:8111/restaurants/1/](http://35.231.187.42:8111/restaurants/1/)
-
-    **Description**: This is the most useful web page in our project. Most of the updates take place via this page. This webpage gives the details of a restaurant. Each restaurant has a separate web page made on the same pattern. The page contains the different locations of a restaurant, the reviews of different users (and critics) for the restaurant along with the rating for the restaurant and the total number of likes for the reviews. The menu items and their description is also provided. Finally, we provide hyperlinks to the webpages of similar restaurants.
+1. <http://localhost:8111/restaurants/1/>
+ 
+     **Description**: This is the most useful web page in our project. Most of the updates take place via this page. This webpage gives the details of a restaurant. Each restaurant has a separate web page made on the same pattern. The page contains the different locations of a restaurant, the reviews of different users (and critics) for the restaurant along with the rating for the restaurant and the total number of likes for the reviews. The menu items and their description is also provided. Finally, we provide hyperlinks to the webpages of similar restaurants.
 
     **Interactions**: The page can be opened in three different ways: user login, critic login, restaurant owner login. Each of these 3 types of “views” has different interactions associated with them. When the page is viewed without any login, you are in “read-only” mode. When a user or a critic logs-in, he can like the reviews (cannot like his own review!), add a new review. A critic also has the ability to make a restaurant location as his favourite. The reviews of users and critics are displayed in separate tables as the critic is expected to give a much more in-depth review. When the owner of the restaurant logs-in, he is allowed to add or update the menu items.
 
@@ -48,7 +60,7 @@ Q) Briefly describe two of the web pages that require (what you consider) the mo
     * Add a new menu item - check if restaurant owner is logged in. If yes, allow him to add a new menu item.
     * Favourite - check if the critic has logged in. If yes, display buttons allowing critics to make a restaurant location as favourite. This is then stored into the favourite table in the database and is displayed on the critic page (explained below).
 
-2. [http://35.231.187.42:8111/critics/c1/](http://35.231.187.42:8111/critics/c1/)
+2. <http://localhost:8111/critics/c1/>
 
     **Description**: This is the profile page of critic. The user can reach this page by clicking on the critic’s name from the critic's review (described above). Here a person can see the reviews that the critic made, his score (based on the number of likes on his reviews) and the restaurants marked as favourite by the critic (Note: a critic can have more than one location of the same restaurant as favourite!). This can be helpful to decide which restaurant should a person go to.
 
@@ -56,9 +68,15 @@ Q) Briefly describe two of the web pages that require (what you consider) the mo
     * __To display the reviews__ - Retrieve the reviews for the user id associated with the critic page opened and display them.
     * __Favourite restaurants__ - Retrieve the restaurant id from the location associated with the favourite restaurants (as critic can have favourite restaurant location instead of a favourite restaurant) by taking a natural join of the restaurant table with the locations table for the locations associated with the current critic id and display all of them.
 
-## Note
-
-The URL mentioned here was the url that we had when
-hosting on google cloud. You will need to use localhost in its place.
-
 ![ERD](./ERD.png)
+
+**NOTE**
+The passwords are hardcoded in the `server.py`. Yes, I am lazy. No, the passwords don't work now. Yes, those are just some container passwords. (I am stupid but not that stupid). 
+
+**TODO**
+
+- [x] Update readme 
+- [ ] Add screenshots of the website. (Need to setup a psql server locally 😥)
+- [ ] remove the hardcoded passwords. (Although it doesn't effect security as you can easily go to the commit history).
+- [ ] Refactor the code from a single file.
+- [ ] Put all the info required to login in a separate file and don't commit it. (Best way security wise)
